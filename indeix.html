@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Learning Lab</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#08111f;color:#f4f7ff;font-family:Arial,sans-serif}
+header{padding:22px 7%;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #26344a}
+.logo{font-size:22px;font-weight:bold;color:#65d9ff}
+nav a{color:#dce7f5;text-decoration:none;margin-left:18px}
+.hero{padding:65px 7%;background:radial-gradient(circle at 80% 20%,#174b69,#101b35 55%,#08111f)}
+.hero h1{font-size:clamp(34px,6vw,58px);margin:0 0 15px}
+.hero h1 span{color:#65d9ff}
+.hero p{color:#c3d1e3;line-height:1.7;max-width:650px}
+.tag{color:#65d9ff;letter-spacing:3px;font-size:12px}
+main{padding:35px 7%}
+h2{margin-top:0}
+.subjects{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:#142239;border:1px solid #2a3d59;border-radius:16px;padding:22px;cursor:pointer;transition:.2s}
+.card:hover,.card.active{border-color:#65d9ff;transform:translateY(-3px)}
+.card .emoji{font-size:35px}
+.card p,.muted{color:#aebed2;line-height:1.6}
+button{background:#168bb8;color:white;border:0;padding:11px 16px;border-radius:9px;cursor:pointer;font-weight:bold}
+button:hover{background:#20a8d8}
+.lab{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;margin-top:25px}
+.viewer,.info{background:#142239;border:1px solid #2a3d59;border-radius:16px;padding:18px}
+#scene{height:370px;width:100%;border-radius:12px;overflow:hidden;background:radial-gradient(circle,#203d60,#091321)}
+#scene canvas{display:block}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.info h3{color:#65d9ff}
+.lesson{padding:12px 0;border-bottom:1px solid #2a3d59}
+input{width:100%;padding:13px;background:#0b1728;color:white;border:1px solid #344963;border-radius:9px;margin:12px 0}
+footer{text-align:center;padding:30px;color:#91a3b9}
+@media(max-width:750px){.subjects,.lab{grid-template-columns:1fr}header{padding:18px 5%}nav a{margin-left:8px;font-size:13px}.hero,main{padding-left:5%;padding-right:5%}#scene{height:300px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🔬 SMART LEARNING LAB</div>
+  <nav><a href="#subjects">Subjects</a><a href="#lab">3D Lab</a></nav>
+</header>
+
+<section class="hero">
+  <div class="tag">EXPLORE • LEARN • DISCOVER</div>
+  <h1>Science is better<br>when you <span>explore it.</span></h1>
+  <p>Welcome to Smart Learning Lab! Discover Biology, Chemistry and Physics through interactive 3D learning models.</p>
+  <a href="#subjects"><button>Start Exploring →</button></a>
+</section>
+
+<main>
+<section id="subjects">
+  <h2>Explore Subjects</h2>
+  <p class="muted">Choose a subject to begin your science journey.</p>
+  <div class="subjects">
+    <div class="card active" data-id="cell">
+      <div class="emoji">🧬</div><h3>Biology</h3>
+      <p>Explore cells and the amazing world of living things.</p>
+      <button>Explore Biology</button>
+    </div>
+    <div class="card" data-id="atom">
+      <div class="emoji">⚛️</div><h3>Chemistry</h3>
+      <p>Discover atoms, elements and molecules.</p>
+      <button>Explore Chemistry</button>
+    </div>
+    <div class="card" data-id="pendulum">
+      <div class="emoji">⚡</div><h3>Physics</h3>
+      <p>Understand motion, energy and forces.</p>
+      <button>Explore Physics</button>
+    </div>
+  </div>
+</section>
+
+<section id="lab" style="margin-top:48px">
+  <h2>Interactive 3D Learning Lab</h2>
+  <p class="muted">Drag to rotate • Scroll to zoom • Select a subject to change the model.</p>
+  <input id="search" placeholder="Search lessons (e.g. cell, atom, motion)">
+  <div class="lab">
+    <div class="viewer">
+      <div id="scene"></div>
+      <div class="controls">
+        <button id="reset">Reset View</button>
+        <button id="spin">Pause Rotation</button>
+      </div>
+    </div>
+    <div class="info">
+      <div class="tag">YOUR SELECTED MODEL</div>
+      <h3 id="modelTitle">Animal Cell</h3>
+      <p id="modelText" class="muted">A cell is the basic structural and functional unit of life.</p>
+      <h3>Quick Learning</h3>
+      <div id="lessons"></div>
+    </div>
+  </div>
+</section>
+</main>
+<footer>© 2026 Smart Learning Lab • Learn Science by Exploring</footer>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+const sceneBox=document.getElementById('scene');
+const scene=new THREE.Scene();
+scene.background=new THREE.Color('#0b1728');
+const camera=new THREE.PerspectiveCamera(45,1,0.1,100);
+camera.position.set(0,2.5,7);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+sceneBox.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+scene.add(new THREE.AmbientLight(0xffffff,1.5));
+const light=new THREE.DirectionalLight(0xffffff,2);
+light.position.set(4,5,5);scene.add(light);
+
+let objects=[];
+let current='cell';
+let spinning=true;
+let pendulum=null;
+
+function clearModel(){
+  objects.forEach(o=>scene.remove(o));
+  objects=[];
+  pendulum=null;
+}
+function add(obj){scene.add(obj);objects.push(obj);return obj}
+function material(color,roughness=.5){
+  return new THREE.MeshStandardMaterial({color,roughness,metalness:.1});
+}
+function sphere(color,size,x,y,z){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(size,32,24),material(color));
+  m.position.set(x,y,z);add(m);return m;
+}
+function torus(color,r,t,rotation){
+  const m=new THREE.Mesh(new THREE.TorusGeometry(r,t,12,80),material(color));
+  m.rotation.set(...rotation);add(m);return m;
+}
+function build(id){
+  clearModel();current=id;
+  camera.position.set(0,2.5,7);controls.target.set(0,0,0);
+  if(id==='cell'){
+    sphere('#55b9a4',1.65,0,0,0);
+    sphere('#183f75',.58,0,0,0);
+    sphere('#e7bd69',.18,.8,.6,.3);
+    sphere('#e7bd69',.18,-.8,-.5,.2);
+    sphere('#d77b9b',.22,.7,-.8,-.3);
+    sphere('#d77b9b',.22,-.7,.8,-.3);
+    sphere('#f2d28b',.15,-.9,.1,.6);
+    document.getElementById('modelTitle').textContent='Animal Cell';
+    document.getElementById('modelText').textContent='A cell is the basic structural and functional unit of life. This is a simplified learning illustration.';
+  }else if(id==='atom'){
+    sphere('#ed795e',.55,0,0,0);
+    torus('#63c9ff',1.8,.025,[1.1,0,0]);
+    torus('#b18aff',1.8,.025,[0,1.1,0]);
+    torus('#65dca8',1.8,.025,[.7,.7,0]);
+    sphere('#63c9ff',.15,1.7,0,0);
+    sphere('#b18aff',.15,0,1.7,0);
+    sphere('#65dca8',.15,-1.2,1.1,0);
+    document.getElementById('modelTitle').textContent='Atom Model';
+    document.getElementById('modelText').textContent='Atoms contain a nucleus and electrons. This Bohr-style picture is a simplified educational model, not a literal picture of an atom.';
+  }else{
+    const rod=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,3,16),material('#d7e5f5'));
+    rod.position.set(0,-1,0);add(rod);
+    sphere('#f3c65d',.48,0,-2.6,0);
+    const pivot=sphere('#65cfff',.12,0,.55,0);
+    pendulum=new THREE.Group();
+    scene.add(pendulum);objects.push(pendulum);
+    pendulum.position.set(0,.55,0);
+    const line=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,2.6,12),material('#d7e5f5'));
+    line.position.y=-1.3;pendulum.add(line);
+    const bob=new THREE.Mesh(new THREE.SphereGeometry(.48,32,24),material('#f3c65d'));
+    bob.position.y=-2.6;pendulum.add(bob);
+    scene.remove(rod);
+    document.getElementById('modelTitle').textContent='Simple Pendulum';
+    document.getElementById('modelText').textContent='A pendulum swings around a fixed point. Its motion is a useful way to learn about periodic motion.';
+  }
+  updateLessons(id);
+}
+const lessonData={
+ cell:['Cell membrane','Nucleus','Cytoplasm','Organelles'],
+ atom:['Protons','Neutrons','Electrons','Elements'],
+ pendulum:['Motion','Gravity','Time period','Energy']
+};
+function updateLessons(id){
+ document.getElementById('lessons').innerHTML=lessonData[id].map(x=>`<div class="lesson">📘 ${x}</div>`).join('');
+}
+document.querySelectorAll('.card').forEach(card=>{
+ card.addEventListener('click',()=>{
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+  card.classList.add('active');build(card.dataset.id);
+ });
+});
+document.getElementById('reset').onclick=()=>{camera.position.set(0,2.5,7);controls.target.set(0,0,0);controls.update()};
+document.getElementById('spin').onclick=()=>{
+ spinning=!spinning;
+ document.getElementById('spin').textContent=spinning?'Pause Rotation':'Resume Rotation';
+};
+document.getElementById('search').addEventListener('input',e=>{
+ const q=e.target.value.toLowerCase();
+ document.querySelectorAll('.lesson').forEach(el=>{
+  el.style.display=el.textContent.toLowerCase().includes(q)?'block':'none';
+ });
+});
+function resize(){
+ const w=sceneBox.clientWidth,h=sceneBox.clientHeight;
+ camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);
+}
+window.addEventListener('resize',resize);resize();build('cell');
+function animate(t){
+ requestAnimationFrame(animate);
+ if(spinning && current!=='pendulum'){
+  objects.forEach(o=>{if(o.isMesh)o.rotation.y+=.002});
+ }
+ if(pendulum)pendulum.rotation.z=Math.sin(t*.0015)*.5;
+ controls.update();renderer.render(scene,camera);
+}
+animate(0);
+</script>
+</body>
+</html>
